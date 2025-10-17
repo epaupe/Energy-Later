@@ -1,7 +1,8 @@
 import numpy as np
-
+import gurobipy as gp
+from gurobipy import GRB
+from gurobipy import quicksum
 #Decision Variables:
 
-#Constraints:
 
-#Battery State of Charge Balance Equation
+#Constraints:
