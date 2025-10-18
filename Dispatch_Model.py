@@ -27,13 +27,15 @@ MMO = gp.Model("Multi Market Optimization")
 #Setup indices for decision variables:
 days = 365
 DAM_horizon = range(granularity_DAM * 24 * days +1)
+print(len(DAM_horizon))
 bidding_slots_DAM = range(10) #arbitrary number for now, to allow for non-uniform biding
 side = ["Buy","Sell"]
 
 #import historical data -> for now random perioid function
 raw_noise = np.random.uniform(40, 120, len(DAM_horizon))
 clearing_price_DAM = gaussian_filter1d(raw_noise, sigma=12)
-
+print(len(clearing_price_DAM))
+print(clearing_price_DAM.type)
 
 #========================================================================================================================================
 #Decision Variables:

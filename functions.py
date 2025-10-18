@@ -1,5 +1,42 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
+
+def load_da_market_data(folder_path, years):
+    """
+    Loads and processes day-ahead market price data from CSV files for given years.
+
+    Args:
+        folder_path (str): The directory where the CSV files are stored.
+        years (list of int): A list of the years to load.
+
+    Returns:
+        pd.DataFrame: A merged, cleaned, and sorted DataFrame containing the 
+                      day-ahead prices with 'timestamp' and 'price_eur_mwh' columns.
+    """
+    file_paths = [os.path.join(folder_path, f"energy-charts_DA_{year}.csv") for year in years]
+
+    df_list = []
+    for path in file_paths:
+        try:
+            df = pd.read_csv(path, sep=',', decimal='.', skiprows=[0])
+            df.columns = ['timestamp', 'price_eur_mwh'] 
+            df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
+            df['price_eur_mwh'] = pd.to_numeric(df['price_eur_mwh'], errors='coerce')
+            df_list.append(df)
+        except FileNotFoundError:
+            print(f"Warning: File not found for path {path}. Skipping.")
+
+    if not df_list:
+        print("No data loaded. Returning empty DataFrame.")
+        return pd.DataFrame(columns=['timestamp', 'price_eur_mwh'])
+
+    # Merge the DA market price dataframes
+    merged_df = pd.concat(df_list, ignore_index=True)
+    merged_df = merged_df.dropna(subset=['timestamp', 'price_eur_mwh'])
+    merged_df = merged_df.sort_values('timestamp').reset_index(drop=True)
+    
+    return merged_df
 
 def plot_DA_week(df, year, week):
     df = df.copy()
