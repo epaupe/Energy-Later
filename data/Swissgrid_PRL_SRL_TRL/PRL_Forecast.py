@@ -3,7 +3,7 @@ import os
 
 # === USER SETTINGS ===
 
-output_dir = r"C:\Users\pielm\Desktop\EnergyLater\Swissgrid_PRL_SRL_TRL"
+output_dir = r"C:\Users\pielm\Desktop\EnergyLater\Energy-Later\data\Swissgrid_PRL_SRL_TRL"
 
 start_year = 2025
 end_year = 2040
