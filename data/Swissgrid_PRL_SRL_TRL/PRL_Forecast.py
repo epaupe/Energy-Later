@@ -2,6 +2,7 @@ import pandas as pd
 import os
 
 # === USER SETTINGS ===
+
 output_dir = r"C:\Users\pielm\Desktop\EnergyLater\Swissgrid_PRL_SRL_TRL"
 
 start_year = 2025
@@ -43,6 +44,7 @@ for year in range(start_year, end_year + 1):
 
     df = base_df.copy()
     df["Preis"] = df["Preis"] * scale_factor
+    df["Preis"] = df["Preis"].round(2)
 
     # Update Ausschreibung identifiers to reflect the new year
     df["Ausschreibung"] = df["Ausschreibung"].str.replace(
