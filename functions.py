@@ -22,10 +22,54 @@ def load_da_market_data(folder_path, years):
     df_list = []
     for path in file_paths:
         try:
-            df = pd.read_csv(path, sep=',', decimal='.', skiprows=[0])
-            df.columns = ['timestamp', 'price_eur_mwh'] 
-            df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
-            df['price_eur_mwh'] = pd.to_numeric(df['price_eur_mwh'], errors='coerce')
+            # Detect whether the file has 1 or 2 header lines by peeking at the second line.
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    _first = f.readline()
+                    _second = f.readline()
+            except UnicodeDecodeError:
+                # Fallback in case a file has a different encoding
+                with open(path, "r", encoding="latin-1") as f:
+                    _first = f.readline()
+                    _second = f.readline()
+
+            # If the second line starts with a digit (timestamp), it's a 1-line header; otherwise 2-line header
+            s = (_second or "").lstrip()
+            skip = 1 if (s and s[0].isdigit()) else 2
+
+            df = pd.read_csv(
+                path,
+                sep=",",
+                header=None,
+                names=["timestamp", "price_eur_mwh"],
+                usecols=[0, 1],
+                skiprows=skip,
+                engine="python",
+                encoding="utf-8",
+            )
+            # Parse timestamps; some newer files (e.g., 2025+) omit timestamps on many rows.
+            # If timestamps are missing (NaT), reconstruct an hourly sequence aligned to rows.
+            ts = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
+            if ts.isna().any():
+                first_valid = ts.first_valid_index()
+                if first_valid is not None:
+                    start_ts = ts.iloc[first_valid]
+                    # Align so that row index == hour offset from start
+                    aligned_start = start_ts - pd.Timedelta(hours=first_valid)
+                    full_ts = pd.date_range(start=aligned_start, periods=len(df), freq="h", tz="UTC")
+                    ts = pd.Series(full_ts)
+                else:
+                    # Fallback: derive year from filename and assume Jan 1st start
+                    try:
+                        year_part = os.path.basename(path).split("_")[-1].split(".")[0]
+                        year_int = int(year_part)
+                    except Exception:
+                        year_int = 2000
+                    full_ts = pd.date_range(start=pd.Timestamp(year=year_int, month=1, day=1, tz="UTC"),
+                                             periods=len(df), freq="h")
+                    ts = pd.Series(full_ts)
+            df["timestamp"] = ts
+            df["price_eur_mwh"] = pd.to_numeric(df["price_eur_mwh"], errors="coerce")
             df_list.append(df)
         except FileNotFoundError:
             print(f"Warning: File not found for path {path}. Skipping.")
