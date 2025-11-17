@@ -4,6 +4,7 @@ import matplotlib.dates as mdates
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
+import numpy as np
 
 
 def load_da_market_data(folder_path, years):
@@ -300,6 +301,68 @@ def generate_fcr_price_forecasts(saturation_start_year):
         df.to_csv(output_path, index=False)
 
         print(f"{year}: target avg={target_avg:.2f}, scale={scale_factor:.4f}, rows={len(df)}")
+
+
+def load_afrr_capacity_prices(afrr_folder, years_to_load_AFRR):
+    """
+    Load weekly aFRR (SRL) positive and negative capacity prices,
+    convert them to daily prices, and attach a 'timestamp' column.
+
+    Expected weekly files in afrr_folder:
+        SRL_capacity_positive_weekly.csv
+        SRL_capacity_negative_weekly.csv
+
+    Each file must contain:
+        Week, Beschreibung, Total_Volume, Mean_Price
+
+    Returns:
+        dict: { year: {"pos": df_pos_daily, "neg": df_neg_daily} }
+    """
+
+    results = {}
+
+    for year in years_to_load_AFRR:
+
+        file_pos = os.path.join(afrr_folder, "SRL_capacity_positive_weekly.csv")
+        file_neg = os.path.join(afrr_folder, "SRL_capacity_negative_weekly.csv")
+
+        # Load CSVs
+        df_pos = pd.read_csv(file_pos)
+        df_neg = pd.read_csv(file_neg)
+
+        # Extract first 52 weekly capacity prices (Mean_Price)
+        weekly_pos = df_pos["Mean_Price"].to_numpy(dtype=float)[:52]
+        weekly_neg = df_neg["Mean_Price"].to_numpy(dtype=float)[:52]
+
+        # Convert weekly → daily (7× repeat → 364 days + final day = 365)
+        daily_pos = np.repeat(weekly_pos, 7)
+        daily_neg = np.repeat(weekly_neg, 7)
+
+        daily_pos = np.append(daily_pos, weekly_pos[-1])
+        daily_neg = np.append(daily_neg, weekly_neg[-1])
+
+        # Build timestamp series for the entire year
+        start_date = datetime.date(year, 1, 1)
+        timestamps = [pd.Timestamp(start_date + datetime.timedelta(days=i)) for i in range(365)]
+
+        df_pos_daily = pd.DataFrame({
+            "timestamp": timestamps,
+            "price": daily_pos
+        })
+
+        df_neg_daily = pd.DataFrame({
+            "timestamp": timestamps,
+            "price": daily_neg
+        })
+
+        results[year] = {
+            "pos": df_pos_daily,
+            "neg": df_neg_daily
+        }
+
+    return results
+
+
 
 def build_acceptance_rate(start_year, end_year, saturation_year):
     """
