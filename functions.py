@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
+import numpy as np
 
 
 def load_da_market_data(folder_path, years):
@@ -219,3 +221,182 @@ def plot_fcr_prices(merged_FCR, year=None, week=None, weekly=False):
     plt.grid(True, linestyle="--", alpha=0.5)
     plt.tight_layout()
     plt.show()
+
+
+def generate_fcr_price_forecasts(saturation_start_year):
+    """
+    Create synthetic FCR (PRL) price forecasts by scaling a base-year profile.
+
+    Parameters
+    ----------
+    saturation_start_year : int
+        Year when prices reach their minimum average (linear decline before,
+        flat afterwards).
+
+    Notes
+    -----
+    Reads `PRL_filled_2024.csv` from `data/Swissgrid_PRL_SRL_TRL`, scales
+    the profile to target yearly means between 2025–2040, removes leap day
+    entries for non-leap years, and writes `PRL_filled_<year>.csv` files to the
+    same folder.
+    """
+    output_dir = Path("data") / "Swissgrid_PRL_SRL_TRL"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    start_year = 2025
+    end_year = 2040
+    saturation_year = saturation_start_year
+
+    start_price = 15.26   # avg at 2025
+    final_price = 9.00   # avg after saturation
+
+    base_year = 2024
+    base_file = output_dir / f"PRL_filled_{base_year}.csv"
+
+    # === Load base profile ===
+    print(f"Loading base year profile from {base_file}")
+    base_df = pd.read_csv(base_file)
+    base_df.columns = base_df.columns.str.strip()
+
+    if "Preis" not in base_df.columns:
+        raise ValueError("Base file must contain a 'Preis' column")
+    if "Ausschreibung" not in base_df.columns:
+        raise ValueError("Base file must contain an 'Ausschreibung' column")
+
+    base_mean = base_df["Preis"].mean()
+    print(f"Base year {base_year} mean price: {base_mean:.2f}")
+
+    # === Compute slope for linear degradation ===
+    years_to_saturation = saturation_year - start_year
+    slope = (final_price - start_price) / years_to_saturation
+    print(f"Linear decline {start_price:.2f} → {final_price:.2f} by {saturation_year} "
+        f"({slope:.4f} per year)")
+
+    # === Generate scaled profiles for future years ===
+    for year in range(start_year, end_year + 1):
+        # Target average for this year
+        if year <= saturation_year:
+            target_avg = start_price + (year - start_year) * slope
+        else:
+            target_avg = final_price
+
+        scale_factor = target_avg / base_mean
+
+        df = base_df.copy()
+        df["Preis"] = (df["Preis"] * scale_factor).round(2)
+
+        # Safely replace only the first year occurrence (_24_ -> _25_)
+        base_yy = str(base_year)[-2:]
+        new_yy = str(year)[-2:]
+
+        df["Ausschreibung"] = df["Ausschreibung"].str.replace(
+            f"_{base_yy}_", f"_{new_yy}_", n=1, regex=False
+        )
+
+        # Remove leap day blocks for non-leap years
+        if not ((year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)):
+            df = df[~df["Ausschreibung"].str.contains(r"_02_29_")]
+
+        output_path = output_dir / f"PRL_filled_{year}.csv"
+        df.to_csv(output_path, index=False)
+
+        print(f"{year}: target avg={target_avg:.2f}, scale={scale_factor:.4f}, rows={len(df)}")
+
+
+def load_afrr_capacity_prices(afrr_folder, years_to_load_AFRR):
+    """
+    Load weekly aFRR (SRL) positive and negative capacity prices,
+    convert them to daily prices, and attach a 'timestamp' column.
+
+    Expected weekly files in afrr_folder:
+        SRL_capacity_positive_weekly.csv
+        SRL_capacity_negative_weekly.csv
+
+    Each file must contain:
+        Week, Beschreibung, Total_Volume, Mean_Price
+
+    Returns:
+        dict: { year: {"pos": df_pos_daily, "neg": df_neg_daily} }
+    """
+
+    results = {}
+
+    for year in years_to_load_AFRR:
+
+        file_pos = os.path.join(afrr_folder, "SRL_capacity_positive_weekly.csv")
+        file_neg = os.path.join(afrr_folder, "SRL_capacity_negative_weekly.csv")
+
+        # Load CSVs
+        df_pos = pd.read_csv(file_pos)
+        df_neg = pd.read_csv(file_neg)
+
+        # Extract first 52 weekly capacity prices (Mean_Price)
+        weekly_pos = df_pos["Mean_Price"].to_numpy(dtype=float)[:52]
+        weekly_neg = df_neg["Mean_Price"].to_numpy(dtype=float)[:52]
+
+        # Convert weekly → daily (7× repeat → 364 days + final day = 365)
+        daily_pos = np.repeat(weekly_pos, 7)
+        daily_neg = np.repeat(weekly_neg, 7)
+
+        daily_pos = np.append(daily_pos, weekly_pos[-1])
+        daily_neg = np.append(daily_neg, weekly_neg[-1])
+
+        # Build timestamp series for the entire year
+        start_date = datetime.date(year, 1, 1)
+        timestamps = [pd.Timestamp(start_date + datetime.timedelta(days=i)) for i in range(365)]
+
+        df_pos_daily = pd.DataFrame({
+            "timestamp": timestamps,
+            "price": daily_pos
+        })
+
+        df_neg_daily = pd.DataFrame({
+            "timestamp": timestamps,
+            "price": daily_neg
+        })
+
+        results[year] = {
+            "pos": df_pos_daily,
+            "neg": df_neg_daily
+        }
+
+    return results
+
+
+
+def build_acceptance_rate(start_year, end_year, saturation_year):
+    """
+    Create a dict of yearly FCR acceptance rates.
+
+    Parameters
+    ----------
+    start_year : int
+        First year to include.
+    end_year : int
+        Last year to include.
+    saturation_year : int
+        Year at which acceptance stays 100% and then begins to decline.
+
+    Returns
+    -------
+    dict[int, float]
+        Mapping year → acceptance probability (1.0 until saturation_year,
+        linear decline to 0.4 by end_year).
+    """
+    rates = {}
+    if saturation_year >= end_year:
+        # Saturation occurs after horizon → stick with full acceptance.
+        for year in range(start_year, end_year + 1):
+            rates[year] = 1.0
+        return rates
+
+    # Otherwise linearly taper from saturation_year down to end_year (40%).
+    decline_span = end_year - saturation_year
+    min_acceptance = 0.4
+    for year in range(start_year, end_year + 1):
+        if year <= saturation_year:
+            rates[year] = 1.0
+        else:
+            frac = (year - saturation_year) / decline_span
+            rates[year] = max(min_acceptance, 1.0 - (1.0 - min_acceptance) * frac)
+    return rates
