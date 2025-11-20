@@ -342,8 +342,14 @@ def load_afrr_capacity_prices(afrr_folder, years_to_load_AFRR):
         daily_neg = np.append(daily_neg, weekly_neg[-1])
 
         # Build timestamp series for the entire year
-        start_date = datetime.date(year, 1, 1)
-        timestamps = [pd.Timestamp(start_date + datetime.timedelta(days=i)) for i in range(365)]
+        import datetime as dt
+
+        start_date = dt.date(year, 1, 1)
+        timestamps = [
+            pd.Timestamp(start_date + dt.timedelta(days=i)).replace(hour=0, minute=0, second=0)
+            for i in range(365)
+        ]
+
 
         df_pos_daily = pd.DataFrame({
             "timestamp": timestamps,
