@@ -244,7 +244,7 @@ def generate_fcr_price_forecasts(saturation_start_year):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     start_year = 2025
-    end_year = 2040
+    end_year = 2044
     saturation_year = saturation_start_year
 
     start_price = 15.26   # avg at 2025
@@ -387,7 +387,7 @@ def build_acceptance_rate(start_year, end_year, saturation_year):
     -------
     dict[int, float]
         Mapping year → acceptance probability (1.0 until saturation_year,
-        linear decline to 0.4 by end_year).
+        linear decline to 0.2 by end_year).
     """
     rates = {}
     if saturation_year >= end_year:
@@ -398,7 +398,7 @@ def build_acceptance_rate(start_year, end_year, saturation_year):
 
     # Otherwise linearly taper from saturation_year down to end_year (40%).
     decline_span = end_year - saturation_year
-    min_acceptance = 0.4
+    min_acceptance = 0.2
     for year in range(start_year, end_year + 1):
         if year <= saturation_year:
             rates[year] = 1.0
