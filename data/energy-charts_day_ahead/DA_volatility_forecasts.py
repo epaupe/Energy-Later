@@ -3,7 +3,7 @@ import calendar
 import os
 
 # === File paths ===
-base_path = r"C:\Users\Thijs de Boer\Desktop\ETH Docs\HS25\Energy-Later"
+base_path = os.path.dirname(os.path.abspath(__file__))
 input_file = os.path.join(base_path, "energy-charts_DA_2024.csv")
 
 # Load 2024 data
