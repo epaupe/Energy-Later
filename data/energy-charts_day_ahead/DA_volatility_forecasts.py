@@ -20,7 +20,7 @@ base_std = df["Price (EUR/MWh)"].std()
 base_year = 2024
 
 # Loop for years 2025–2040
-for year in range(2025, 2041):
+for year in range(2025, 2051):
     df_forecast = df.copy()
 
     # 🔧 Ensure datetime dtype (fixes the AttributeError)
@@ -39,7 +39,7 @@ for year in range(2025, 2041):
     )
 
     # Volatility increase: +2% per year (customize as needed)
-    vol_factor = 1.02 ** (year - base_year)
+    vol_factor = 1.00 ** (year - base_year)
 
     # Apply volatility scaling (keep same mean)
     df_forecast["Price (EUR/MWh)"] = (
