@@ -3,7 +3,7 @@ import calendar
 import os
 
 # === File paths ===
-base_path = r"C:\Users\pielm\Desktop\EnergyLater\Energy-Later\data\energy-charts_day_ahead"
+base_path = r"C:\Users\Thijs de Boer\Desktop\ETH Docs\HS25\Energy-Later"
 input_file = os.path.join(base_path, "energy-charts_DA_2024.csv")
 
 # Load 2024 data
@@ -39,7 +39,7 @@ for year in range(2025, 2051):
     )
 
     # Volatility increase: +2% per year (customize as needed)
-    vol_factor = 1.00 ** (year - base_year)
+    vol_factor = 1.01 ** (year - base_year)
 
     # Apply volatility scaling (keep same mean)
     df_forecast["Price (EUR/MWh)"] = (
