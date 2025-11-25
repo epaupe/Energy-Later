@@ -39,7 +39,7 @@ for year in range(2025, 2051):
     )
 
     # Volatility increase: +2% per year (customize as needed)
-    vol_factor = 1.01 ** (year - base_year)
+    vol_factor = 0.99 ** (year - base_year)
 
     # Apply volatility scaling (keep same mean)
     df_forecast["Price (EUR/MWh)"] = (
