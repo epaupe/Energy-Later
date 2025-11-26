@@ -264,12 +264,12 @@ def generate_fcr_price_forecasts(saturation_start_year):
         raise ValueError("Base file must contain an 'Ausschreibung' column")
 
     base_mean = base_df["Preis"].mean()
-    print(f"Base year {base_year} mean price: {base_mean:.2f}")
+    #print(f"Base year {base_year} mean price: {base_mean:.2f}")
 
     # === Compute slope for linear degradation ===
     years_to_saturation = saturation_year - start_year
     slope = (final_price - start_price) / years_to_saturation
-    print(f"Linear decline {start_price:.2f} → {final_price:.2f} by {saturation_year} "
+    print(f"FCR Prices linear decline {start_price:.2f} → {final_price:.2f} by {saturation_year} "
         f"({slope:.4f} per year)")
 
     # === Generate scaled profiles for future years ===
@@ -300,7 +300,7 @@ def generate_fcr_price_forecasts(saturation_start_year):
         output_path = output_dir / f"PRL_filled_{year}.csv"
         df.to_csv(output_path, index=False)
 
-        print(f"{year}: target avg={target_avg:.2f}, scale={scale_factor:.4f}, rows={len(df)}")
+        #print(f"{year}: target avg={target_avg:.2f}, scale={scale_factor:.4f}, rows={len(df)}")
 
 
 def load_afrr_capacity_prices(afrr_folder, years_to_load_AFRR):
