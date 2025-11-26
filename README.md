@@ -12,25 +12,12 @@ This framework makes it possible to evaluate BESS revenues under different:
 
 ---
 
-## Repository Structure
+## Results Example
 
-project/
-│
-├── Optimal_Dispatch_Model.ipynb       # Main notebook (runs full simulation)
-│
-├── src/
-│   ├── config.py                      # Centralized configuration (paths, constants)
-│   ├── data_loading.ipynb             # Notebook for loading & visualizing price inputs
-│   ├── functions.py                   # Data loading & plotting utilities
-│   └── dispatch_model.py              # Core DA–FCR–aFRR dispatch logic
-│
-├── data/                              # Raw and forecasted price data
-│   ├── energy-charts_day_ahead/
-│   └── Swissgrid_PRL_SRL_TRL/
-│
-├── results/                           # Yearly revenue .xlsx outputs
-│
-└── previous_versions/                 # Archived older model versions
+<p align="center">
+  <img src="results/optimal_bidding.png" width="600"><br>
+  <em>Figure: Example of optimal multi-market bidding over a 72-hour horizon.</em>
+</p>
 
 ---
 
