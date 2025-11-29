@@ -28,7 +28,8 @@ def solve_da_fcr_afrr(
     activation_counter=0,
     year=2024,
     utilization_factor_AFRR=0.05,
-    acceptance_rate=None,
+    acceptance_rate_fcr=None,
+    acceptance_rate_afrr=None,
     minimum_bid_AFRR=5,
     AFRR_Pos_Act_price = 53, 
     AFRR_Neg_Act_price = 32.19 
@@ -125,11 +126,11 @@ def solve_da_fcr_afrr(
     for t in FCR_horizon:
         # Random number for activation
         rng = np.random.default_rng(seed=activation_counter)
-        random_value = rng.random()
+        random_value_fcr = rng.random()
         activation_counter += 1
 
         # Minimum bid if participating
-        if random_value <= acceptance_rate[year]: 
+        if random_value_fcr <= acceptance_rate_fcr[year]: 
             MMO.addConstr(FCR_Participation[t] * minimum_bid_FCR <= FCR_Volume[t])
             MMO.addConstr(FCR_Volume[t] <= charge_ub * FCR_Participation[t])
 
@@ -141,13 +142,23 @@ def solve_da_fcr_afrr(
     # ----------------------------------------------------------------------
 
     for t in AFRR_horizon:
-        # Minimum bid if participating for positive (upward) regulation
-        MMO.addConstr(AFRR_Participation_Pos[t] * minimum_bid_AFRR <= AFRR_Volume_Pos[t])
-        MMO.addConstr(AFRR_Volume_Pos[t] <= charge_ub * AFRR_Participation_Pos[t])
+        # Random number for activation
+        rng = np.random.default_rng(seed=activation_counter + 42)
+        random_value_afrr = rng.random()
+        activation_counter += 1
 
-        # Minimum bid if participating for negative (downward) regulation
-        MMO.addConstr(AFRR_Participation_Neg[t] * minimum_bid_AFRR <= AFRR_Volume_Neg[t])
-        MMO.addConstr(AFRR_Volume_Neg[t] <= charge_ub * AFRR_Participation_Neg[t])
+        if random_value_afrr <= acceptance_rate_afrr[year]: 
+            # Minimum bid if participating for positive (upward) regulation
+            MMO.addConstr(AFRR_Participation_Pos[t] * minimum_bid_AFRR <= AFRR_Volume_Pos[t])
+            MMO.addConstr(AFRR_Volume_Pos[t] <= charge_ub * AFRR_Participation_Pos[t])
+
+            # Minimum bid if participating for negative (downward) regulation
+            MMO.addConstr(AFRR_Participation_Neg[t] * minimum_bid_AFRR <= AFRR_Volume_Neg[t])
+            MMO.addConstr(AFRR_Volume_Neg[t] <= charge_ub * AFRR_Participation_Neg[t])
+
+        else:  # no participation
+            MMO.addConstr(AFRR_Volume_Pos[t] == 0)
+            MMO.addConstr(AFRR_Volume_Neg[t] == 0)
 
     # ----------------------------------------------------------------------
     # 8. SOC headroom + power headroom constraints
@@ -226,7 +237,8 @@ def run_receding_horizon_single_year(
     DA_all,
     FCR_all,
     AFRR_cap_all,
-    acceptance_rate,
+    acceptance_rate_fcr,
+    acceptance_rate_afrr,
     *,
     initial_SOC=20,
     granularity_DA=1,
@@ -387,7 +399,8 @@ def run_receding_horizon_single_year(
             activation_counter=activation_counter,
             year=current_time.year,
             utilization_factor_AFRR=utilization_factor_AFRR,
-            acceptance_rate=acceptance_rate,
+            acceptance_rate_fcr=acceptance_rate_fcr,
+            acceptance_rate_afrr=acceptance_rate_afrr,
             minimum_bid_AFRR=minimum_bid_AFRR,
             AFRR_Pos_Act_price=AFRR_Pos_Act_price,
             AFRR_Neg_Act_price=AFRR_Neg_Act_price

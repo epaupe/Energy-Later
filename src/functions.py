@@ -370,7 +370,7 @@ def load_afrr_capacity_prices(afrr_folder, years_to_load_AFRR):
 
 
 
-def build_acceptance_rate(start_year, end_year, saturation_year):
+def build_acceptance_rate(start_year, end_year, saturation_year, end_acceptance):
     """
     Create a dict of yearly FCR acceptance rates.
 
@@ -398,7 +398,7 @@ def build_acceptance_rate(start_year, end_year, saturation_year):
 
     # Otherwise linearly taper from saturation_year down to end_year (40%).
     decline_span = end_year - saturation_year
-    min_acceptance = 0.2
+    min_acceptance = end_acceptance
     for year in range(start_year, end_year + 1):
         if year <= saturation_year:
             rates[year] = 1.0
