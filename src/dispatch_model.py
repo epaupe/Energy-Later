@@ -17,7 +17,7 @@ def solve_da_fcr_afrr(
     soc_min=1.0,
     charge_rate_bounds=(0.0, 10.0),
     discharge_rate_bounds=(0, 10.0),
-    efficiency=0.99,
+    efficiency=0.92,
     self_discharge_rate=3e-5,
     minimum_bid_FCR=1.0,
     wcs_factor_FCR=(0.36, 0.27, 0.18, 0.90),
@@ -31,8 +31,8 @@ def solve_da_fcr_afrr(
     acceptance_rate_fcr=None,
     acceptance_rate_afrr=None,
     minimum_bid_AFRR=5,
-    AFRR_Pos_Act_price = 53, 
-    AFRR_Neg_Act_price = 32.19 
+    AFRR_Pos_Act_price = 375, 
+    AFRR_Neg_Act_price = -35 
 ):
     """
     Solve the joint 72h DA + FCR + aFRR optimization problem.
@@ -208,7 +208,7 @@ def solve_da_fcr_afrr(
     AFRR_Neg_Act_term =  quicksum(utilization_factor_AFRR * AFRR_Volume_Neg[t] * AFRR_Neg_Act_price * granularity_AFRR  for t in AFRR_horizon)
 
 
-    MMO.setObjective(DA_term + FCR_term + AFRR_Pos_Cap_term + AFRR_Neg_Cap_term + AFRR_Pos_Act_term + AFRR_Neg_Act_term, GRB.MAXIMIZE)
+    MMO.setObjective(DA_term + FCR_term + AFRR_Pos_Cap_term + AFRR_Neg_Cap_term + AFRR_Pos_Act_term - AFRR_Neg_Act_term, GRB.MAXIMIZE)
     MMO.optimize()
 
     # ----------------------------------------------------------------------
@@ -249,7 +249,7 @@ def run_receding_horizon_single_year(
     charge_rate_max=10,
     discharge_rate_min=0,
     discharge_rate_max=10,
-    efficiency=0.99,
+    efficiency=0.92,
     self_discharge_rate=3e-5,
     minimum_bid_FCR=1,
     wcs_factor_FCR=[0.36, 0.27, 0.18, 0.09],
@@ -257,8 +257,8 @@ def run_receding_horizon_single_year(
     time_limit_seconds=300,
     activation_counter=0,
     utilization_factor_AFRR=0.05,
-    AFRR_Pos_Act_price=53,
-    AFRR_Neg_Act_price=32.19,
+    AFRR_Pos_Act_price=375,
+    AFRR_Neg_Act_price=-35,
     minimum_bid_AFRR=5
 ):
     """

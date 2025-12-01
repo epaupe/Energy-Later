@@ -303,7 +303,7 @@ def generate_fcr_price_forecasts(saturation_start_year):
         #print(f"{year}: target avg={target_avg:.2f}, scale={scale_factor:.4f}, rows={len(df)}")
 
 
-def load_afrr_capacity_prices(afrr_folder, years_to_load_AFRR):
+def load_afrr_capacity_prices(afrr_folder, years_to_load_AFRR, scenario):
     """
     Load weekly aFRR (SRL) positive and negative capacity prices,
     convert them to daily prices, and attach a 'timestamp' column.
@@ -322,6 +322,16 @@ def load_afrr_capacity_prices(afrr_folder, years_to_load_AFRR):
     results = {}
 
     for year in years_to_load_AFRR:
+        # if scenario == "stromabkommen":
+        #     if year < 2030:
+        #         file_pos = os.path.join(afrr_folder, "SRL_capacity_positive_weekly.csv")
+        #         file_neg = os.path.join(afrr_folder, "SRL_capacity_negative_weekly.csv")
+        #     else:
+        #         file_pos = os.path.join(afrr_folder, "SRL_capacity_positive_weekly_PICASSO.csv")
+        #         file_neg = os.path.join(afrr_folder, "SRL_capacity_negative_weekly_PICASSO.csv")
+        # else:
+        #     file_pos = os.path.join(afrr_folder, "SRL_capacity_positive_weekly.csv")
+        #     file_neg = os.path.join(afrr_folder, "SRL_capacity_negative_weekly.csv")
 
         file_pos = os.path.join(afrr_folder, "SRL_capacity_positive_weekly.csv")
         file_neg = os.path.join(afrr_folder, "SRL_capacity_negative_weekly.csv")
